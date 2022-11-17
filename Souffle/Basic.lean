@@ -177,14 +177,14 @@ protected def emitLetValue (decl: Decl) (letCode: Code) (letVal: LetValue) : Rel
     Souffle.emit (← handle .LetValueProj) #[declId, letCodeId, toString typeName, toString idx, toString struct.name]
   | .const declName us args =>
     Souffle.emit (← handle .LetValueConst) #[declId, letCodeId, toString declName]
-    for arg in args do
-      let argId ← Souffle.emitArg arg
-      Souffle.emit (← handle .LetValueConstArg) #[declId, letCodeId, argId]
+    for i in [:args.size] do
+      let argId ← Souffle.emitArg args[i]!
+      Souffle.emit (← handle .LetValueConstArg) #[declId, letCodeId, toString i, argId]
   | .fvar fvarId args =>
     Souffle.emit (← handle .LetValueFVar) #[declId, letCodeId, toString fvarId.name]
-    for arg in args do
-      let argId ← Souffle.emitArg arg
-      Souffle.emit (← handle .LetValueFVarArg) #[declId, letCodeId, argId]
+    for i in [:args.size] do
+      let argId ← Souffle.emitArg args[i]!
+      Souffle.emit (← handle .LetValueFVarArg) #[declId, letCodeId, toString i, argId]
 
 protected partial def emitCode (decl: Decl) (code : Code) : RelationsM Unit := do
   let declId := decl.name.toString
@@ -206,9 +206,9 @@ protected partial def emitCode (decl: Decl) (code : Code) : RelationsM Unit := d
 
   | .jmp fvarId args =>
     Souffle.emit (← handle .Jmp) #[declId, codeId, toString fvarId.name]
-    for arg in args do
-      let argId ← Souffle.emitArg arg
-      Souffle.emit (← handle .JmpArg) #[declId, codeId, argId]
+    for i in [:args.size] do
+      let argId ← Souffle.emitArg args[i]!
+      Souffle.emit (← handle .JmpArg) #[declId, codeId, toString i, argId]
 
   | .cases ⟨typeName, resultType, disc, alts⟩ => do
     let resultTypeId := toString <| hash resultType
@@ -226,9 +226,9 @@ where
     match alt with
     | .alt ctorName params code =>
       Souffle.emit (← handle .Alt) #[declId, codeId, altId, toString ctorName]
-      for param in params do
-        let paramId ← Souffle.emitParam param
-        Souffle.emit (← handle .AltParam) #[declId, codeId, altId, paramId]
+      for i in [:params.size] do
+        let paramId ← Souffle.emitParam params[i]!
+        Souffle.emit (← handle .AltParam) #[declId, codeId, altId, toString i, paramId]
       Souffle.emitCode decl code
     | .default next =>
       let nextId := toString <| hash code
@@ -240,9 +240,9 @@ where
     let valueId := toString <| hash value
     let nextId := toString <| hash next
     Souffle.emit (← handle rel) #[declId, codeId, toString fvarId.name, toString binderName, typeId, valueId, nextId]
-    for param in params do
-      let paramId ← Souffle.emitParam param
-      Souffle.emit (← handle paramRel) #[declId, codeId, paramId]
+    for i in [:params.size] do
+      let paramId ← Souffle.emitParam params[i]!
+      Souffle.emit (← handle paramRel) #[declId, codeId, toString i, paramId]
     Souffle.emitCode decl value
     Souffle.emitCode decl next
 
@@ -250,9 +250,9 @@ protected def emitDecl (modName: Name) (decl : Decl) : RelationsM Decl := do
   let declId := decl.name.toString
   let typeId := toString <| hash decl.type
   Souffle.emit (← handle .Decl) #[declId, typeId, modName.toString]
-  for param in decl.params do
-    let paramId ← Souffle.emitParam param
-    Souffle.emit (← handle .DeclParam) #[declId, paramId]
+  for i in [:decl.params.size] do
+    let paramId ← Souffle.emitParam decl.params[i]!
+    Souffle.emit (← handle .DeclParam) #[declId, toString i, paramId]
   Souffle.emitCode decl decl.value
   pure decl
 

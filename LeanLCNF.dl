@@ -37,7 +37,7 @@
 .decl Decl (declId: Name, typeId: Hash, moduleName: Name) choice-domain (declId)
 .input Decl
 .printsize Decl
-.decl DeclParam (declId: Name, paramId: Hash)
+.decl DeclParam (declId: Name, idx: Nat, paramId: Hash)
 .input DeclParam
 .printsize DeclParam
 
@@ -60,13 +60,13 @@
 .decl LetValueConst    (declId: Name, letCodeId: Hash, declName: Name) choice-domain (declId, letCodeId)
 .input LetValueConst
 .printsize LetValueConst
-.decl LetValueConstArg (declId: Name, letCodeId: Hash, argId: Hash) choice-domain (declId, letCodeId, argId)
+.decl LetValueConstArg (declId: Name, letCodeId: Hash, idx: Nat, argId: Hash) choice-domain (declId, letCodeId, argId)
 .input LetValueConstArg
 .printsize LetValueConstArg
 .decl LetValueFVar    (declId: Name, letCodeId: Hash, fvarId: FVarId) choice-domain (declId, letCodeId)
 .input LetValueFVar
 .printsize LetValueFVar
-.decl LetValueFVarArg (declId: Name, letCodeId: Hash, argId: Hash) choice-domain (declId, letCodeId, argId)
+.decl LetValueFVarArg (declId: Name, letCodeId: Hash, idx: Nat, argId: Hash) choice-domain (declId, letCodeId, argId)
 .input LetValueFVarArg
 .printsize LetValueFVarArg
 
@@ -74,13 +74,13 @@
 .decl Fun        (declId: Name, codeId: Hash, fvarId: FVarId, binderName: Name, typeId: Hash, valueId: Hash) choice-domain (declId, codeId)
 .input Fun
 .printsize Fun
-.decl FunParam   (declId: Name, codeId: Hash, paramId: Hash)
+.decl FunParam   (declId: Name, codeId: Hash, idx: Nat, paramId: Hash)
 .input FunParam
 .printsize FunParam
 .decl Jp         (declId: Name, codeId: Hash, fvarId: FVarId, binderName: Name, typeId: Hash, valueId: Hash) choice-domain (declId, codeId)
 .input Jp
 .printsize Jp
-.decl JpParam    (declId: Name, codeId: Hash, paramId: Hash)
+.decl JpParam    (declId: Name, codeId: Hash, idx: Nat, paramId: Hash)
 .input JpParam
 .printsize JpParam
 .decl Jmp        (declId: Name, codeId: Hash, fvarId: FVarId) choice-domain (declId, codeId)
@@ -100,7 +100,7 @@
 .decl Alt        (declId: Name, casesCodeId: Hash, altId: Hash, ctorName: Name) choice-domain (declId, casesCodeId, altId)
 .input Alt
 .printsize Alt
-.decl AltParam   (declId: Name, casesCodeId: Hash, altId: Hash, paramId: Hash)
+.decl AltParam   (declId: Name, casesCodeId: Hash, altId: Hash, idx: Nat, paramId: Hash)
 .input AltParam
 .printsize AltParam
 
@@ -175,7 +175,7 @@ TailCallModCons(declName, binderName) :-
     RecursiveLet(declName, _, fvarId, binderName, _),
     Let(declName, ctorCodeId, retFVarId, _, _, retCodeId),
         LetValueConst(declName, ctorCodeId, _),
-        LetValueConstArg(declName, ctorCodeId, argId),
+        LetValueConstArg(declName, ctorCodeId, _, argId),
         ArgFVar(argId, fvarId),
     Return(declName, retCodeId, retFVarId).
 
@@ -183,7 +183,7 @@ TailCallModCons(declName, binderName) :-
     RecursiveLet(declName, _, fvarId, binderName, _),
     Let(declName, fvarCodeId, retFVarId, _, _, retCodeId),
         LetValueFVar(declName, fvarCodeId, _),
-        LetValueFVarArg(declName, fvarCodeId, argId),
+        LetValueFVarArg(declName, fvarCodeId, _, argId),
         ArgFVar(argId, fvarId),
     Return(declName, retCodeId, retFVarId).
 
