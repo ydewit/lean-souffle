@@ -13,9 +13,14 @@ def main : IO Unit :=
 
 
 -- #eval Probe.runOnModule `LeanLcnf (phase := .mono)
---   <| emitRelations
+--   <| Souffle.emitRelations
 --   >=> Probe.declNames
 
-#eval Probe.runGlobally (phase := .mono)
-  <| Souffle.emitRelations
-  >=> Probe.count
+-- set_option trace.Compiler.init true in
+-- #eval Lean.Compiler.compile #[``Lean.Compiler.LCNF.Probe.filterByFun]
+
+#eval Souffle.emitRelations
+
+-- #eval Probe.runGlobally (phase := .mono)
+--   <| Souffle.emitRelations
+--   >=> Probe.count
