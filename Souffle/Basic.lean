@@ -39,6 +39,8 @@ inductive Relation
 | AltDefault
 | Return
 | Unreach
+-- NS
+| Namespace
 -- MODULE
 | Module
 | ModuleImport
@@ -99,6 +101,7 @@ instance : ToString Relation where
   | .AltDefault => "AltDefault"
   | .Return => "Return"
   | .Unreach => "Unreach"
+  | .Namespace => "Namespace"
   | .Module => "Module"
   | .ModuleImport => "ModuleImport"
   -- | .ConstantInfo => "ConstantInfo"
@@ -246,9 +249,14 @@ def initDecls : RelationsM Unit := do
   Souffle.writeDecl .Unreach #[("declName","Name"),("codeId","Hash")] #[("typeId","Hash")]
   h.putStrLn ""
 
+  -- NS
+  Souffle.writeDecl .Namespace #[("namespace", "Name")] #[]
+  h.putStrLn ""
+
   -- Module
   Souffle.writeDecl .Module #[("modName", "Name"), ("modIdx", "Nat")] #[]
   Souffle.writeDecl .ModuleImport #[("modName", "Name")] #[("importName", "Name")]
+  h.putStrLn ""
 
   -- ConstantInfo
   Souffle.writeDecl .InductiveVal #[("declName", "Name")] #[("type", "Hash"), ( "numParams", "Nat"), ("numIndices", "Nat"), ("rec", "Bool"),("unsafe","Bool"),("reflexive","Bool"),("nested","Bool")]
@@ -579,6 +587,12 @@ def runConstantsGlobally (action: Name → ConstantInfo → RelationsM Unit) : R
   let env ← getEnv
   env.constants.forM action
 
+def emitNamespace (ns: Name) : RelationsM Unit :=
+  Souffle.writeFact .Namespace #[toString ns]
+
+def runNamespacesGlobally (action: Name → RelationsM Unit) : RelationsM Unit := do
+  (← getEnv).getNamespaceSet.forM action
+
 def runModulesGlobally (action: Name → Nat → ModuleData → RelationsM Unit) : RelationsM Unit := do
   let env ← getEnv
   for modName in env.allImportedModuleNames do
@@ -603,6 +617,7 @@ where
   go : RelationsM Unit := do
     initDecls -- init ./dl/LCNF.dl
     initFacts -- init ./facts/*.facts
+    runNamespacesGlobally emitNamespace
     runConstantsGlobally fun _ ci => Souffle.emitConstantInfo ci
     runModulesGlobally Souffle.emitModule
     runDeclsGlobally Souffle.emitDecl

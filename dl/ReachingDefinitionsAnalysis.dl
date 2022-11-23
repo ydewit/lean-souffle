@@ -1,0 +1,34 @@
+#include "LeanLCNF.dl"
+
+// Reaching Definitions Analysis
+// -----------------------------
+
+// A reaching definition for a given instruction is an earlier
+// instruction whose target variable can reach the given one
+// without an intervening assignment.
+//
+// For example:
+// ```
+// d1: y:= 3
+// d2: x:= y
+// ```
+// In the above example, `d1` is a reaching definition for `d2`.
+
+
+// Kill: do we have kill in Lean?
+.decl Kill(declId: Name, codeId: Hash, fvarId: FVarId)
+.printsize Kill
+.output Kill
+
+// OUT[n] = (IN[n] - KILL[n]) U GEN[n]
+.decl Out(declId: Name, codeId: Hash, fvarId: FVarId)
+.printsize Out
+.output Out
+Out(declId, codeId, fvarId) :- Gen(declId, codeId, fvarId, _, _, _).
+Out(declId, codeId, fvarId) :- In(declId, codeId, fvarId), !Kill(declId, codeId, fvarId).
+
+// IN[n] = U OUT[n'] where n' are all n's predecessors
+.decl In(declId: Name, codeId: Hash, fvarId: FVarId)
+.printsize In
+.output In
+In(declId, codeId, fvarId) :- Out(prevDeclId, prevCodeId, fvarId), Next(prevDeclId, prevCodeId, declId, codeId).

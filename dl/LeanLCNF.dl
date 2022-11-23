@@ -1,0 +1,150 @@
+#include "LCNF.dl"
+
+// This is a Souffle Datalog file that processes .facts files emitted by the
+// Souffle.emitRelations function (see ./Souffle/Basic.lean)
+
+// RECURSIVE LET
+.decl RecursiveLet(declName: Name, codeId: Hash, fvarId: FVarId, binderName: Name, nextId: Hash)
+.printsize RecursiveLet
+
+RecursiveLet(declName, codeId, fvarId, binderName, nextCodeId) :-
+    Let(declName, codeId, fvarId, binderName, _, nextCodeId),
+        LetValueConst(declName, codeId, declName).
+
+// TAIL CALL
+.decl TailCall(declName:Name, binderName:Name)
+.printsize TailCall
+
+TailCall(declName, binderName) :-
+    RecursiveLet(declName, _, fvarId, binderName, codeId),
+    Return(declName, codeId, fvarId).
+
+// TAIL CALL MODULE CONS
+// Case 1:
+// ------
+// def List.length._redArg x.1 : Nat :=
+//   cases x.1 : Nat
+//   | List.nil =>
+//     let _x.2 := 0;
+//     return _x.2
+//   | List.cons head.3 tail.4 =>
+//     let _x.5 := List.length._redArg tail.4; -- this is not right before the constructor, but in same block
+//     let _x.6 := 1;
+//     let _x.7 := Nat.add _x.5 _x.6;
+//     return _x.7
+// Case 2:
+// ------
+// def Nat.repeat._redArg f x.1 x.2 : lcErased :=
+//   cases x.1 : lcErased
+//   | Nat.zero =>
+//     return x.2
+//   | Nat.succ n.3 =>
+//     let _x.4 := Nat.repeat._redArg f n.3 x.2; -- recursive call behind a LetValue.fvar
+//     let _x.5 := f _x.4;
+//     return _x.5
+// Case 3:
+// ------
+// @[specialize] def any (f : Nat → Bool) : Nat → Bool
+//   | 0      => false
+//   | succ n => any f n || f n
+//
+// def Nat.any f x.1 : Bool :=
+//   cases x.1 : Bool
+//   | Nat.zero =>
+//     let _x.2 := false;
+//     return _x.2
+//   | Nat.succ n.3 =>
+//     let _x.4 := any f n.3;
+//     cases _x.4 : Bool
+//     | Bool.false =>
+//       let _x.5 := f n.3;
+//       return _x.5
+//     | Bool.true =>
+//       return _x.4
+
+.decl TailCallModCons(declName:Name, binderName:Name)
+.printsize TailCallModCons
+
+TailCallModCons(declName, binderName) :-
+    RecursiveLet(declName, _, fvarId, binderName, _),
+    Let(declName, ctorCodeId, retFVarId, _, _, retCodeId),
+        LetValueConst(declName, ctorCodeId, _),
+        LetValueConstArg(declName, ctorCodeId, _, argId),
+        ArgFVar(argId, fvarId),
+    Return(declName, retCodeId, retFVarId).
+
+TailCallModCons(declName, binderName) :-
+    RecursiveLet(declName, _, fvarId, binderName, _),
+    Let(declName, fvarCodeId, retFVarId, _, _, retCodeId),
+        LetValueFVar(declName, fvarCodeId, _),
+        LetValueFVarArg(declName, fvarCodeId, _, argId),
+        ArgFVar(argId, fvarId),
+    Return(declName, retCodeId, retFVarId).
+
+// Find two declarations that are mutual recursive
+.decl MutualRecursion(firstDecl:Name, secondDecl: Name)
+.printsize MutualRecursion
+
+MutualRecursion(leftDecl,rightDecl) :-
+    Let(leftDecl, leftCodeId, _, _, _, _),
+        LetValueConst(leftDecl, leftCodeId, rightDecl),
+    Let(rightDecl, rightCodeId, _, _, _, _),
+        LetValueConst(rightDecl, rightCodeId, leftDecl),
+    leftDecl != rightDecl,
+    leftCodeId > rightCodeId.
+
+
+// MAYBE A TAIL CALL (with source code changes)?
+.decl MaybeTailCall(declName: Name)
+.printsize MaybeTailCall
+
+MaybeTailCall(declName) :-
+    RecursiveLet(declName, _, _, binderName, _),
+    !TailCall(declName, binderName),
+    !TailCallModCons(declName, binderName).
+
+// //
+// .decl RootDecl(decl: Name)
+// .printsize RootDecl
+
+// RootDecl(to) :-
+//     Decl(to, _, _),
+//     !Call(_, to).
+
+// .decl Call(fromDecl: Name, toDecl: Name)
+// .printsize Call
+
+// Call(from, to) :-
+//     LetValueConst(from, _, to),
+//     from != to.
+
+// OUPUTS
+// .output RootDecl
+// .output Call
+.output TailCallModCons //(delimiter=",")
+.output TailCall //(delimiter=",")
+.output MaybeTailCall //(delimiter=",")
+.output MutualRecursion //(delimiter=",")
+
+
+// Next abstracts next edges in LCNF
+.decl Next(declId:Name, codeId: Hash, nextDeclId: Name, nextCodeId: Hash)
+.printsize Next
+.output Next
+
+Next(dId, cId, dId, nextCodeId) :- // note that it intra-procedural only
+    Let(dId, cId, _, _, _, nextCodeId);
+    Fun(dId, cId, _, _, _, _, nextCodeId);
+    Jp(dId, cId, _, _, _, _, nextCodeId);
+    Alt(dId, cId, _, _, nextCodeId);
+    AltDefault(dId, cId, _, nextCodeId).
+
+// Generates a new allocation
+.decl Gen(declId:Name, codeId: Hash, fvarId: FVarId, binderName: Name, ctorName: Name, modName: Name)
+    choice-domain (declId, codeId, fvarId)
+.printsize Gen
+.output Gen
+Gen(dId,cId,fvarId,binderName, inductName, constDeclName) :-
+    Let(dId, cId, fvarId, binderName, _, _),
+    LetValueConst(dId, cId, constDeclName),
+    ConstructorVal(constDeclName, _, inductName, _, _, _, _).

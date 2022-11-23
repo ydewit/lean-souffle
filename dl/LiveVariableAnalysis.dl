@@ -1,0 +1,43 @@
+// Live Variable Analysis
+// ----------------------
+
+// Discovering information about how data (i.e. variables and their values)
+// may move through a program. In other words, for a given program location
+// what are the live variables.
+
+// This is a backwards data-flow analysis: usage info from future instructions
+// must be propagated backwards through the program.
+
+// Motivation:
+// * to find code with no effect on the program's overall result
+// * occurrences of variables being used before they are defined (not really a thing in Lean)
+// * many variables which need to be allocated registers and/or memory locations for compilation.
+
+// Two kinds:
+// * semantic: concerned with the execution behavior (undecidable since, for instance,
+//              control flow may depend upon arithmetic)
+// * syntactic: a computable aproximation of semantic liveness
+
+
+
+
+
+
+
+
+
+// // An instruction makes a variable dead when it defines (assigns to -- no in Lean) it.
+// .decl Def()
+
+// // An instruction makes a variable live when it references (uses) it
+// .decl Ref()
+
+// // Data flow equations:
+// // $ InLive(n) = ( OutLive(n) / Def(n) ) U Ref(n) $
+// // $ OutLive(n) = U InLive(s) where s in succ(n) $
+
+// // Live variables immediatelly before a program location
+// .decl InLive()
+
+// // Live variables immediatelly after a program location
+// .decl OutLive()
