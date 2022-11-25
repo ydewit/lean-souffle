@@ -3,3 +3,5 @@
 !/lean_packages/manifest.json
 /gen
 /facts
+/outputs
+/facts.dl
